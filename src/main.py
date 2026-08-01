@@ -1,6 +1,8 @@
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import FastAPI, HTTPException, Query, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from src.models import Expense, ExpenseCreate
 from src import storage
@@ -8,14 +10,36 @@ from src import storage
 app = FastAPI(title="Smart Expense Tracker")
 
 
+# ── Consistent error envelope ─────────────────────────────────────────────────
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Return all Pydantic validation errors as {"error": "<message>"}."""
+    messages = "; ".join(
+        f"{' -> '.join(str(loc) for loc in err['loc'])}: {err['msg']}"
+        for err in exc.errors()
+    )
+    return JSONResponse(status_code=422, content={"error": messages})
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """Return HTTPException details as {"error": "<message>"}."""
+    return JSONResponse(status_code=exc.status_code, content={"error": exc.detail})
+
+
+# ── Routes ────────────────────────────────────────────────────────────────────
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
 
 @app.post("/expenses", response_model=Expense, status_code=201)
 def create_expense(data: ExpenseCreate) -> Expense:
     """Accept a validated ExpenseCreate payload, persist it, and return the created Expense."""
     return storage.add_expense(data)
+
 
 @app.get("/expenses/summary/monthly")
 def monthly_summary() -> dict[str, float]:
