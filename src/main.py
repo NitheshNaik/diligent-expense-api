@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 
 from src.models import Expense, ExpenseCreate
 from src import storage
@@ -32,3 +32,12 @@ def list_expenses(
 ) -> list[Expense]:
     """Return all expenses, optionally filtered by category (case-insensitive)."""
     return storage.filter_expenses(category)
+
+
+@app.delete("/expenses/{expense_id}", status_code=204)
+def delete_expense(expense_id: int) -> Response:
+    """Delete the expense with the given id. Returns 204 on success, 404 if not found."""
+    deleted = storage.delete_expense(expense_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Expense {expense_id} not found")
+    return Response(status_code=204)
