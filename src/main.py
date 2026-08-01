@@ -4,6 +4,8 @@ from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from src.models import Expense, ExpenseCreate
 from src import storage
 
@@ -14,6 +16,15 @@ app = FastAPI(
         "Uses an in-memory backend."
     ),
     version="1.0.0",
+)
+
+# Enable CORS for local testing of static HTML pages
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

@@ -25,6 +25,14 @@ uvicorn src.main:app --reload
 The API will be available at **http://127.0.0.1:8000**.  
 Interactive docs (Swagger UI) are at **http://127.0.0.1:8000/docs**.
 
+## static file server
+
+```bash
+python -m http.server 5500
+```
+
+The static files will be available at **http://localhost:5500**.
+
 ## Test
 
 ```bash
