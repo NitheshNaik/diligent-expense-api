@@ -7,7 +7,14 @@ from fastapi.responses import JSONResponse
 from src.models import Expense, ExpenseCreate
 from src import storage
 
-app = FastAPI(title="Smart Expense Tracker")
+app = FastAPI(
+    title="Smart Expense Tracker API",
+    description=(
+        "A lightweight REST API to track, query, summarize, and manage personal expenses. "
+        "Uses an in-memory backend."
+    ),
+    version="1.0.0",
+)
 
 
 # ── Consistent error envelope ─────────────────────────────────────────────────
@@ -30,24 +37,32 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
-@app.get("/health")
+@app.get(
+    "/health",
+    summary="Check API Health",
+)
 def health_check():
+    """Return the operational health status of the application."""
     return {"status": "ok"}
 
 
-@app.post("/expenses", response_model=Expense, status_code=201)
+@app.post(
+    "/expenses",
+    response_model=Expense,
+    status_code=201,
+    summary="Create a New Expense",
+)
 def create_expense(data: ExpenseCreate) -> Expense:
-    """Accept a validated ExpenseCreate payload, persist it, and return the created Expense."""
+    """Validate and persist a new expense payload. The server assigns a unique ID."""
     return storage.add_expense(data)
 
 
-@app.get("/expenses/summary/monthly")
+@app.get(
+    "/expenses/summary/monthly",
+    summary="Get Monthly Expense Summary",
+)
 def monthly_summary() -> dict[str, float]:
-    """Return total expense amounts grouped by year-month (e.g. {'2026-01': 450.00}).
-
-    Reuses get_all_expenses() from storage; grouping is done here in O(n).
-    Keys are sorted chronologically.
-    """
+    """Calculate and return total expense amounts grouped chronologically by calendar month (YYYY-MM)."""
     expenses = storage.get_all_expenses()
     totals: dict[str, float] = {}
     for expense in expenses:
@@ -56,26 +71,43 @@ def monthly_summary() -> dict[str, float]:
     return dict(sorted(totals.items()))
 
 
-@app.get("/expenses/total")
+@app.get(
+    "/expenses/total",
+    summary="Get Total Sum of Expenses",
+)
 def get_total(
-    category: Optional[str] = Query(default=None, description="Filter by category (case-insensitive)"),
+    category: Optional[str] = Query(
+        default=None,
+        description="Filter total calculation by specific category (case-insensitive)",
+    ),
 ) -> dict:
-    """Return the sum of expense amounts, optionally filtered by category."""
+    """Calculate the sum of all expenses, with an optional filter for a specific category."""
     expenses = storage.filter_expenses(category)
     return {"total": round(sum(e.amount for e in expenses), 2)}
 
 
-@app.get("/expenses", response_model=list[Expense])
+@app.get(
+    "/expenses",
+    response_model=list[Expense],
+    summary="List and Filter Expenses",
+)
 def list_expenses(
-    category: Optional[str] = Query(default=None, description="Filter by category (case-insensitive)"),
+    category: Optional[str] = Query(
+        default=None,
+        description="Filter listing by specific category (case-insensitive)",
+    ),
 ) -> list[Expense]:
-    """Return all expenses, optionally filtered by category (case-insensitive)."""
+    """Return a list of all expenses, with an optional filter for a specific category."""
     return storage.filter_expenses(category)
 
 
-@app.delete("/expenses/{expense_id}", status_code=204)
+@app.delete(
+    "/expenses/{expense_id}",
+    status_code=204,
+    summary="Delete an Expense by ID",
+)
 def delete_expense(expense_id: int) -> Response:
-    """Delete the expense with the given id. Returns 204 on success, 404 if not found."""
+    """Delete a recorded expense by its unique ID. Returns 204 on success, or 404 if not found."""
     deleted = storage.delete_expense(expense_id)
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Expense {expense_id} not found")
