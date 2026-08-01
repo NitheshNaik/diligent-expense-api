@@ -17,6 +17,21 @@ def create_expense(data: ExpenseCreate) -> Expense:
     """Accept a validated ExpenseCreate payload, persist it, and return the created Expense."""
     return storage.add_expense(data)
 
+@app.get("/expenses/summary/monthly")
+def monthly_summary() -> dict[str, float]:
+    """Return total expense amounts grouped by year-month (e.g. {'2026-01': 450.00}).
+
+    Reuses get_all_expenses() from storage; grouping is done here in O(n).
+    Keys are sorted chronologically.
+    """
+    expenses = storage.get_all_expenses()
+    totals: dict[str, float] = {}
+    for expense in expenses:
+        key = expense.date.strftime("%Y-%m")
+        totals[key] = round(totals.get(key, 0.0) + expense.amount, 2)
+    return dict(sorted(totals.items()))
+
+
 @app.get("/expenses/total")
 def get_total(
     category: Optional[str] = Query(default=None, description="Filter by category (case-insensitive)"),
