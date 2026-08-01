@@ -19,6 +19,17 @@ def get_all_expenses() -> list[Expense]:
     return list(_store.values())
 
 
+def filter_expenses(category: str | None = None) -> list[Expense]:
+    """Return expenses optionally filtered by category (case-insensitive).
+
+    When *category* is None all expenses are returned unchanged.
+    """
+    expenses = get_all_expenses()
+    if category is not None:
+        expenses = [e for e in expenses if e.category.lower() == category.lower()]
+    return expenses
+
+
 def get_expense_by_id(expense_id: int) -> Expense | None:
     """Return the expense with the given id, or None if not found."""
     return _store.get(expense_id)

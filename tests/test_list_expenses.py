@@ -43,7 +43,6 @@ def test_list_expenses_multiple():
     assert response.status_code == 200
     body = response.json()
     assert len(body) == 3
-    # ids are assigned in insertion order
     assert [e["id"] for e in body] == [1, 2, 3]
 
 
